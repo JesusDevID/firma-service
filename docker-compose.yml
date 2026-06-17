@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  firma-service:
+    build: .
+
+    container_name: firma-service
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SIGNIO_URL: https://api.signio.com
+      SIGNIO_TOKEN: TOKEN_PRUEBA_123

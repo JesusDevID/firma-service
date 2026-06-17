@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: firma-service
+
+  datasource:
+    url: jdbc:h2:file:./data/firmadb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8080
+
+signio:
+  url: ${SIGNIO_URL:https://api.signio.com}
+  token: ${SIGNIO_TOKEN:TOKEN_PRUEBA_123}
