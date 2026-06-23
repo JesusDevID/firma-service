@@ -25,6 +25,9 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x ./mvnw
+
       - name: Run tests and coverage check
         run: ./mvnw verify
 
