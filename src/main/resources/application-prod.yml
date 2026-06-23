@@ -22,6 +22,12 @@ security:
 signio:
   url: ${SIGNIO_URL}
   token: ${SIGNIO_TOKEN}
+  webhook-secret: ${SIGNIO_WEBHOOK_SECRET}
+  webhook-url: ${SIGNIO_WEBHOOK_URL}
+
+onbase:
+  url: ${ONBASE_URL}
+  token: ${ONBASE_TOKEN}
 
 management:
   endpoint:

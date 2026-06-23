@@ -3,6 +3,7 @@ package com.equidad.firmaservice.service;
 import com.equidad.firmaservice.client.SignioClient;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
+import com.equidad.firmaservice.dto.SignioWebhookEventDTO;
 import com.equidad.firmaservice.dto.SignioResponseDTO;
 import com.equidad.firmaservice.exception.BusinessException;
 import com.equidad.firmaservice.exception.ResourceNotFoundException;
@@ -76,6 +77,8 @@ public class FirmaService {
 
         firmaEntity.setRespuestaSignio(
                 respuestaSignio.getMensaje());
+
+        firmaEntity.setProveedorFirma("SIGNIO");
 
         firmaEntity.setUsuarioCreacion(usuarioActual());
         firmaEntity.setUsuarioActualizacion(usuarioActual());
@@ -172,6 +175,39 @@ public class FirmaService {
         return cambiarEstado(id, EstadoFirma.EXPIRADO);
     }
 
+    public FirmaEntity procesarEventoSignio(SignioWebhookEventDTO event) {
+
+        logger.info("Procesando webhook de Signio. documentoId={}, estadoExterno={}",
+                event.getDocumentoId(), event.getEstado());
+
+        FirmaEntity firma =
+                firmaRepository.findFirstByDocumentoIdOrderByIdDesc(
+                                event.getDocumentoId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Firma no encontrada para el documento informado"));
+
+        EstadoFirma estado = mapearEstadoSignio(event.getEstado());
+
+        firma.setEstado(estado.name());
+        firma.setProveedorFirma("SIGNIO");
+        firma.setIdTransaccionExterna(event.getIdTransaccionExterna());
+        firma.setUltimoEventoExterno(event.getEstado());
+        firma.setFechaUltimoEvento(
+                event.getFechaEvento() != null
+                        ? event.getFechaEvento()
+                        : LocalDateTime.now());
+        firma.setRespuestaSignio(event.getMensaje());
+        firma.setUsuarioActualizacion("webhook-signio");
+
+        FirmaEntity firmaActualizada = firmaRepository.save(firma);
+
+        logger.info("Webhook de Signio aplicado. firmaId={}, nuevoEstado={}",
+                firmaActualizada.getId(), estado.name());
+
+        return firmaActualizada;
+    }
+
     private FirmaEntity cambiarEstado(Long id, EstadoFirma nuevoEstado) {
 
         logger.info("Cambiando estado de firma. id={}, nuevoEstado={}",
@@ -201,6 +237,27 @@ public class FirmaService {
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("Estado de firma inválido: " + estado);
         }
+    }
+
+    private EstadoFirma mapearEstadoSignio(String estadoExterno) {
+
+        if (estadoExterno == null || estadoExterno.isBlank()) {
+            throw new BusinessException("Estado externo de Signio inválido");
+        }
+
+        return switch (estadoExterno.trim().toUpperCase()) {
+            case "PENDING", "PENDIENTE" -> EstadoFirma.PENDIENTE;
+            case "SENT", "ENVIADO" -> EstadoFirma.ENVIADO;
+            case "PROCESSING", "IN_PROCESS", "EN_PROCESO" ->
+                    EstadoFirma.EN_PROCESO;
+            case "SIGNED", "COMPLETED", "FIRMADO" -> EstadoFirma.FIRMADO;
+            case "REJECTED", "DECLINED", "RECHAZADO" ->
+                    EstadoFirma.RECHAZADO;
+            case "EXPIRED", "EXPIRADO" -> EstadoFirma.EXPIRADO;
+            case "ERROR", "FAILED" -> EstadoFirma.ERROR;
+            default -> throw new BusinessException(
+                    "Estado externo de Signio no soportado: " + estadoExterno);
+        };
     }
 
     private String usuarioActual() {

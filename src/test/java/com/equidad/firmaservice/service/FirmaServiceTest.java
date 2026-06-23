@@ -3,6 +3,7 @@ package com.equidad.firmaservice.service;
 import com.equidad.firmaservice.client.SignioClient;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
+import com.equidad.firmaservice.dto.SignioWebhookEventDTO;
 import com.equidad.firmaservice.dto.SignioResponseDTO;
 import com.equidad.firmaservice.exception.BusinessException;
 import com.equidad.firmaservice.exception.ResourceNotFoundException;
@@ -198,5 +199,50 @@ class FirmaServiceTest {
                 pageable);
 
         assertThat(resultado.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void procesarEventoSignioActualizaFirmaPorDocumento() {
+        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaEntity firma = new FirmaEntity();
+        firma.setDocumentoId("DOC-100");
+        firma.setEstado(EstadoFirma.ENVIADO.name());
+
+        SignioWebhookEventDTO event = new SignioWebhookEventDTO();
+        event.setDocumentoId("DOC-100");
+        event.setEstado("SIGNED");
+        event.setIdTransaccionExterna("TX-1");
+        event.setMensaje("Firmado desde webhook");
+
+        when(firmaRepository.findFirstByDocumentoIdOrderByIdDesc("DOC-100"))
+                .thenReturn(Optional.of(firma));
+        when(firmaRepository.save(firma)).thenReturn(firma);
+
+        FirmaEntity actualizada = service.procesarEventoSignio(event);
+
+        assertThat(actualizada.getEstado())
+                .isEqualTo(EstadoFirma.FIRMADO.name());
+        assertThat(actualizada.getProveedorFirma()).isEqualTo("SIGNIO");
+        assertThat(actualizada.getIdTransaccionExterna()).isEqualTo("TX-1");
+        assertThat(actualizada.getUltimoEventoExterno()).isEqualTo("SIGNED");
+        assertThat(actualizada.getFechaUltimoEvento()).isNotNull();
+        verify(firmaRepository).save(firma);
+    }
+
+    @Test
+    void procesarEventoSignioConEstadoNoSoportadoLanzaBusinessException() {
+        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaEntity firma = new FirmaEntity();
+
+        SignioWebhookEventDTO event = new SignioWebhookEventDTO();
+        event.setDocumentoId("DOC-100");
+        event.setEstado("UNKNOWN");
+
+        when(firmaRepository.findFirstByDocumentoIdOrderByIdDesc("DOC-100"))
+                .thenReturn(Optional.of(firma));
+
+        assertThatThrownBy(() -> service.procesarEventoSignio(event))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Estado externo de Signio no soportado");
     }
 }

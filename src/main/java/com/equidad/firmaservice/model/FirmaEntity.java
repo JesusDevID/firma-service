@@ -21,6 +21,14 @@ public class FirmaEntity {
     @Column(length = 5000)
     private String respuestaSignio;
 
+    private String proveedorFirma;
+
+    private String idTransaccionExterna;
+
+    private String ultimoEventoExterno;
+
+    private LocalDateTime fechaUltimoEvento;
+
     private LocalDateTime fechaCreacion;
 
     private LocalDateTime fechaActualizacion;
@@ -86,6 +94,38 @@ public class FirmaEntity {
 
     public void setRespuestaSignio(String respuestaSignio) {
         this.respuestaSignio = respuestaSignio;
+    }
+
+    public String getProveedorFirma() {
+        return proveedorFirma;
+    }
+
+    public void setProveedorFirma(String proveedorFirma) {
+        this.proveedorFirma = proveedorFirma;
+    }
+
+    public String getIdTransaccionExterna() {
+        return idTransaccionExterna;
+    }
+
+    public void setIdTransaccionExterna(String idTransaccionExterna) {
+        this.idTransaccionExterna = idTransaccionExterna;
+    }
+
+    public String getUltimoEventoExterno() {
+        return ultimoEventoExterno;
+    }
+
+    public void setUltimoEventoExterno(String ultimoEventoExterno) {
+        this.ultimoEventoExterno = ultimoEventoExterno;
+    }
+
+    public LocalDateTime getFechaUltimoEvento() {
+        return fechaUltimoEvento;
+    }
+
+    public void setFechaUltimoEvento(LocalDateTime fechaUltimoEvento) {
+        this.fechaUltimoEvento = fechaUltimoEvento;
     }
 
     public LocalDateTime getFechaCreacion() {

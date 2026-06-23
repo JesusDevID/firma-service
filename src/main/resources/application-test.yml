@@ -22,3 +22,9 @@ security:
 signio:
   url: https://signio.mock.local
   token: TOKEN_TEST
+  webhook-secret: TOKEN_WEBHOOK_TEST
+  webhook-url: http://localhost:8080/webhooks/signio
+
+onbase:
+  url: https://onbase.mock.local
+  token: TOKEN_ONBASE_TEST

@@ -71,6 +71,18 @@ class DtoValidationTest {
     }
 
     @Test
+    void signioWebhookEventValidaCamposObligatorios() {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            SignioWebhookEventDTO event = new SignioWebhookEventDTO();
+
+            var violations = validator.validate(event);
+
+            assertThat(violations).hasSizeGreaterThanOrEqualTo(2);
+        }
+    }
+
+    @Test
     void errorResponseGettersYSettersYConstructor() {
         LocalDateTime fecha = LocalDateTime.now();
         ErrorResponseDTO response =

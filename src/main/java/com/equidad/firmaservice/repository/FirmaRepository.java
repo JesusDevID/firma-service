@@ -1,5 +1,6 @@
 package com.equidad.firmaservice.repository;
 import java.util.List;
+import java.util.Optional;
 import com.equidad.firmaservice.model.FirmaEntity;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,5 +17,6 @@ public interface FirmaRepository
 
     List<FirmaEntity> findByCorreo(String correo);
 
+    Optional<FirmaEntity> findFirstByDocumentoIdOrderByIdDesc(String documentoId);
 
 }

@@ -1,0 +1,4 @@
+ALTER TABLE firmas ADD COLUMN IF NOT EXISTS proveedor_firma VARCHAR(255);
+ALTER TABLE firmas ADD COLUMN IF NOT EXISTS id_transaccion_externa VARCHAR(255);
+ALTER TABLE firmas ADD COLUMN IF NOT EXISTS ultimo_evento_externo VARCHAR(255);
+ALTER TABLE firmas ADD COLUMN IF NOT EXISTS fecha_ultimo_evento TIMESTAMP;

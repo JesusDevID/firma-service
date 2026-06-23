@@ -5,7 +5,7 @@ Microservicio Java 17 con Spring Boot 3 para la gestión de solicitudes de firma
 - `SignioClientReal`
 - `OnBaseClient`
 
-Actualmente Signio funciona como cliente mock local, sin llamadas HTTP externas. No hay integración real con Signio ni con OnBase.
+Actualmente Signio funciona como cliente mock local, sin llamadas HTTP externas. No hay integración real con Signio ni con OnBase, pero el servicio ya incluye un endpoint webhook preparado para recibir eventos normalizados de Signio.
 
 ## Funcionalidades
 
@@ -15,6 +15,7 @@ Actualmente Signio funciona como cliente mock local, sin llamadas HTTP externas.
 - CRUD/consulta de firmas.
 - Estados completos de firma.
 - Envío mock a Signio.
+- Webhook preparado para eventos de Signio.
 - Validación de DTOs con Bean Validation.
 - Auditoría automática de creación y actualización.
 - Paginación.
@@ -75,6 +76,7 @@ Endpoints públicos:
 ```http
 POST /auth/login
 GET /firmas/health
+POST /webhooks/signio
 GET /swagger-ui/**
 GET /v3/api-docs/**
 GET /actuator/health
@@ -235,6 +237,60 @@ PUT /firmas/{id}/expirar
 Authorization: Bearer <jwt>
 ```
 
+## Webhook de Signio
+
+Endpoint preparado:
+
+```http
+POST /webhooks/signio
+Content-Type: application/json
+X-Signio-Webhook-Secret: <SIGNIO_WEBHOOK_SECRET>
+```
+
+Este endpoint no requiere JWT porque será invocado por Signio. La protección prevista es el secreto compartido `X-Signio-Webhook-Secret`.
+
+Body normalizado actual:
+
+```json
+{
+  "documentoId": "DOC-123",
+  "estado": "SIGNED",
+  "idTransaccionExterna": "SIGNIO-TX-987",
+  "mensaje": "Documento firmado correctamente",
+  "fechaEvento": "2026-06-23T10:00:00"
+}
+```
+
+Respuesta:
+
+```json
+{
+  "codigo": 200,
+  "mensaje": "Proceso exitoso",
+  "data": {
+    "documentoId": "DOC-123",
+    "estado": "FIRMADO",
+    "proveedorFirma": "SIGNIO",
+    "idTransaccionExterna": "SIGNIO-TX-987",
+    "ultimoEventoExterno": "SIGNED"
+  }
+}
+```
+
+Mapeo de estados externos soportado:
+
+```text
+PENDING / PENDIENTE -> PENDIENTE
+SENT / ENVIADO -> ENVIADO
+PROCESSING / IN_PROCESS / EN_PROCESO -> EN_PROCESO
+SIGNED / COMPLETED / FIRMADO -> FIRMADO
+REJECTED / DECLINED / RECHAZADO -> RECHAZADO
+EXPIRED / EXPIRADO -> EXPIRADO
+ERROR / FAILED -> ERROR
+```
+
+> Nota: cuando se confirme el payload real de Signio, solo debería ajustarse el DTO/adaptador de entrada o el mapeo, no el núcleo del servicio.
+
 ## Estados de firma
 
 ```text
@@ -267,8 +323,14 @@ Para nuevos endpoints y errores controlados se usa:
 - `fechaActualizacion`
 - `usuarioCreacion`
 - `usuarioActualizacion`
+- `proveedorFirma`
+- `idTransaccionExterna`
+- `ultimoEventoExterno`
+- `fechaUltimoEvento`
 
 Las fechas se inicializan automáticamente con `@PrePersist` y `@PreUpdate`.
+
+Los campos externos permiten rastrear el proveedor de firma y los eventos recibidos por webhook sin acoplar el dominio al payload real de Signio.
 
 ## Actuator
 
@@ -308,6 +370,10 @@ JWT_SECRET
 JWT_EXPIRATION_MILLIS
 SIGNIO_URL
 SIGNIO_TOKEN
+SIGNIO_WEBHOOK_SECRET
+SIGNIO_WEBHOOK_URL
+ONBASE_URL
+ONBASE_TOKEN
 ```
 
 Profiles disponibles:
@@ -346,6 +412,7 @@ Migración inicial:
 
 ```text
 V1__create_firmas_table.sql
+V2__add_external_integration_fields.sql
 ```
 
 En `test`, Flyway está deshabilitado y se usa H2 en memoria con `create-drop`.
@@ -388,6 +455,7 @@ Suite actual:
 
 - `FirmaServiceTest`
 - `FirmaControllerTest`
+- `SignioWebhookControllerTest`
 - `AuthControllerTest`
 - `JwtUtilTest`
 - `JwtFilterTest`
@@ -444,3 +512,6 @@ El núcleo del microservicio queda preparado. Las tareas pendientes intencionale
 
 - Implementar `SignioClientReal`.
 - Implementar `OnBaseClient`.
+- Confirmar URL pública del webhook de Signio (`SIGNIO_WEBHOOK_URL`).
+- Confirmar secreto/header de seguridad de webhook (`SIGNIO_WEBHOOK_SECRET` o esquema HMAC real).
+- Ajustar el adaptador si el payload real de Signio difiere del contrato normalizado actual.

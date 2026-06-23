@@ -34,6 +34,12 @@ security:
 signio:
   url: ${SIGNIO_URL:https://api.signio.com}
   token: ${SIGNIO_TOKEN:TOKEN_PRUEBA_123}
+  webhook-secret: ${SIGNIO_WEBHOOK_SECRET:}
+  webhook-url: ${SIGNIO_WEBHOOK_URL:http://localhost:8080/webhooks/signio}
+
+onbase:
+  url: ${ONBASE_URL:}
+  token: ${ONBASE_TOKEN:}
 
 management:
   endpoints:
