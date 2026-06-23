@@ -28,3 +28,9 @@ signio:
 onbase:
   url: https://onbase.mock.local
   token: TOKEN_ONBASE_TEST
+
+integrations:
+  signio:
+    mode: mock
+  onbase:
+    enabled: false

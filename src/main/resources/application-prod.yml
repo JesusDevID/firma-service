@@ -29,6 +29,12 @@ onbase:
   url: ${ONBASE_URL}
   token: ${ONBASE_TOKEN}
 
+integrations:
+  signio:
+    mode: ${SIGNIO_INTEGRATION_MODE:mock}
+  onbase:
+    enabled: ${ONBASE_ENABLED:false}
+
 management:
   endpoint:
     health:

@@ -325,6 +325,36 @@ ERROR / FAILED -> ERROR
 
 > Nota: cuando se confirme el payload real de Signio, solo debería ajustarse el DTO/adaptador de entrada o el mapeo, no el núcleo del servicio.
 
+## Modos de integración
+
+Por defecto el servicio trabaja en modo seguro/mock:
+
+```yaml
+integrations:
+  signio:
+    mode: mock
+  onbase:
+    enabled: false
+```
+
+Para activar el cliente real de Signio cuando esté implementado:
+
+```env
+SIGNIO_INTEGRATION_MODE=real
+```
+
+Para activar OnBase cuando esté implementado:
+
+```env
+ONBASE_ENABLED=true
+```
+
+El handoff técnico completo está en:
+
+```text
+docs/INTEGRACIONES.md
+```
+
 ## Estados de firma
 
 ```text
@@ -405,6 +435,12 @@ Plantilla de variables:
 .env.example
 ```
 
+Guía de handoff para implementar Signio y OnBase reales:
+
+```text
+docs/INTEGRACIONES.md
+```
+
 Variables externalizadas:
 
 ```text
@@ -414,8 +450,10 @@ SIGNIO_URL
 SIGNIO_TOKEN
 SIGNIO_WEBHOOK_SECRET
 SIGNIO_WEBHOOK_URL
+SIGNIO_INTEGRATION_MODE
 ONBASE_URL
 ONBASE_TOKEN
+ONBASE_ENABLED
 ```
 
 Profiles disponibles:

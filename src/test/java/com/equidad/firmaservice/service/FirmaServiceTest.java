@@ -1,6 +1,6 @@
 package com.equidad.firmaservice.service;
 
-import com.equidad.firmaservice.client.SignioClient;
+import com.equidad.firmaservice.client.FirmaProviderClient;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.dto.SignioWebhookEventDTO;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 class FirmaServiceTest {
 
     @Mock
-    private SignioClient signioClient;
+    private FirmaProviderClient firmaProviderClient;
 
     @Mock
     private FirmaRepository firmaRepository;
@@ -56,7 +56,7 @@ class FirmaServiceTest {
         signioResponse.setEstado("OK");
         signioResponse.setMensaje("mock ok");
 
-        when(signioClient.enviarDocumento("DOC-1")).thenReturn(signioResponse);
+        when(firmaProviderClient.enviarDocumento(request)).thenReturn(signioResponse);
 
         FirmaResponseDTO response = service.procesarFirma(request);
 
@@ -83,7 +83,7 @@ class FirmaServiceTest {
         signioResponse.setEstado("ERROR");
         signioResponse.setMensaje("mock error");
 
-        when(signioClient.enviarDocumento("DOC-2")).thenReturn(signioResponse);
+        when(firmaProviderClient.enviarDocumento(request)).thenReturn(signioResponse);
 
         FirmaResponseDTO response = service.procesarFirma(request);
 
@@ -318,7 +318,7 @@ class FirmaServiceTest {
 
     private FirmaService crearService() {
         return new FirmaService(
-                signioClient,
+                firmaProviderClient,
                 firmaRepository,
                 firmaEventoRepository);
     }

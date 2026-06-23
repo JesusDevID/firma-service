@@ -1,6 +1,6 @@
 package com.equidad.firmaservice.service;
 
-import com.equidad.firmaservice.client.SignioClient;
+import com.equidad.firmaservice.client.FirmaProviderClient;
 import com.equidad.firmaservice.dto.FirmaEventoResponseDTO;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
@@ -31,15 +31,15 @@ public class FirmaService {
     private static final Logger logger =
             LoggerFactory.getLogger(FirmaService.class);
 
-    private final SignioClient signioClient;
+    private final FirmaProviderClient firmaProviderClient;
     private final FirmaRepository firmaRepository;
     private final FirmaEventoRepository firmaEventoRepository;
 
-    public FirmaService(SignioClient signioClient,
+    public FirmaService(FirmaProviderClient firmaProviderClient,
                         FirmaRepository firmaRepository,
                         FirmaEventoRepository firmaEventoRepository) {
 
-        this.signioClient = signioClient;
+        this.firmaProviderClient = firmaProviderClient;
         this.firmaRepository = firmaRepository;
         this.firmaEventoRepository = firmaEventoRepository;
     }
@@ -49,8 +49,7 @@ public class FirmaService {
         logger.info("Iniciando proceso de firma");
 
         SignioResponseDTO respuestaSignio =
-                signioClient.enviarDocumento(
-                        request.getIdDocumento());
+                firmaProviderClient.enviarDocumento(request);
 
         logger.info("Respuesta mock de Signio recibida con estado: {}",
                 respuestaSignio.getEstado());
