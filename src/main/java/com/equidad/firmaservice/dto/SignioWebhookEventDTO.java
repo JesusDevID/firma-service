@@ -13,14 +13,21 @@ public class SignioWebhookEventDTO {
     @Size(max = 100, message = "El documento no puede superar 100 caracteres")
     @Schema(
             description = "Identificador interno del documento enviado a firma",
-            example = "DOC-123")
+            example = "DOC-123",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     private String documentoId;
 
     @NotBlank(message = "El estado es obligatorio")
     @Size(max = 50, message = "El estado no puede superar 50 caracteres")
     @Schema(
             description = "Estado externo recibido desde Signio. Se normaliza a EstadoFirma",
-            example = "SIGNED")
+            example = "SIGNED",
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            allowableValues = {
+                    "PENDING", "SENT", "PROCESSING", "IN_PROCESS",
+                    "SIGNED", "COMPLETED", "REJECTED", "DECLINED",
+                    "EXPIRED", "ERROR", "FAILED"
+            })
     private String estado;
 
     @Size(max = 255, message = "La transacción externa no puede superar 255 caracteres")

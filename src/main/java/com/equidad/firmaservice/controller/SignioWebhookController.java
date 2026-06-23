@@ -54,7 +54,9 @@ public class SignioWebhookController {
                     description = "Firma no encontrada para el documento informado")
     })
     public ApiResponse<FirmaEntity> recibirEvento(
-            @Parameter(description = "Secreto compartido configurado en SIGNIO_WEBHOOK_SECRET")
+            @Parameter(
+                    description = "Secreto compartido configurado en SIGNIO_WEBHOOK_SECRET",
+                    example = "mi-secreto-webhook")
             @RequestHeader(value = "X-Signio-Webhook-Secret", required = false)
             String webhookSecret,
             @Valid @RequestBody SignioWebhookEventDTO event) {

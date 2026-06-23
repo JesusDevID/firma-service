@@ -1,18 +1,40 @@
 package com.equidad.firmaservice.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 
+@Schema(description = "Evento externo auditado para una firma")
 public class FirmaEventoResponseDTO {
 
+    @Schema(description = "Proveedor que originó el evento", example = "SIGNIO")
     private String proveedor;
+
+    @Schema(description = "Identificador único del evento externo", example = "SIGNIO-EVT-456")
     private String idEventoExterno;
+
+    @Schema(description = "Identificador de transacción/sobre del proveedor", example = "SIGNIO-TX-987")
     private String idTransaccionExterna;
+
+    @Schema(description = "Documento interno asociado", example = "DOC-123")
     private String documentoId;
+
+    @Schema(description = "Estado recibido desde el proveedor", example = "SIGNED")
     private String estadoExterno;
+
+    @Schema(description = "Estado interno antes de aplicar el evento", example = "ENVIADO")
     private String estadoAnterior;
+
+    @Schema(description = "Estado interno después de aplicar el evento", example = "FIRMADO")
     private String estadoNuevo;
+
+    @Schema(description = "Mensaje recibido o normalizado", example = "Documento firmado correctamente")
     private String mensaje;
+
+    @Schema(description = "Fecha reportada por el proveedor", example = "2026-06-23T10:00:00")
     private LocalDateTime fechaEvento;
+
+    @Schema(description = "Fecha en que firma-service recibió el evento", example = "2026-06-23T10:00:05")
     private LocalDateTime fechaRecepcion;
 
     public String getProveedor() {

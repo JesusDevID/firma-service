@@ -7,6 +7,7 @@ import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.model.FirmaEntity;
 import com.equidad.firmaservice.service.FirmaService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,7 +31,9 @@ public class FirmaController {
     }
 
     @GetMapping("/health")
-    @Operation(summary = "Estado básico del servicio")
+    @Operation(
+            summary = "Estado básico del servicio",
+            description = "Endpoint público y liviano para comprobar que el microservicio responde.")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -41,7 +44,9 @@ public class FirmaController {
     }
 
     @PostMapping("/enviar")
-    @Operation(summary = "Enviar una solicitud de firma")
+    @Operation(
+            summary = "Enviar una solicitud de firma",
+            description = "Crea una solicitud de firma y la envía al proveedor configurado. En modo mock no hace llamadas externas.")
     @SecurityRequirement(name = "bearerAuth")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -61,7 +66,9 @@ public class FirmaController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar firmas con soporte opcional de paginación y filtros")
+    @Operation(
+            summary = "Listar firmas con paginación y filtros opcionales",
+            description = "Sin parámetros devuelve una lista legacy. Con page, size o filtros devuelve una página. Fechas en formato ISO yyyy-MM-ddTHH:mm:ss.")
     @SecurityRequirement(name = "bearerAuth")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -75,13 +82,19 @@ public class FirmaController {
                     description = "Token inválido o ausente")
     })
     public Object obtenerFirmas(
+            @Parameter(description = "Número de página iniciando en 0", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Tamaño de página. Máximo aplicado: 100", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Estado interno de firma", example = "FIRMADO")
             @RequestParam(required = false) String estado,
+            @Parameter(description = "Correo exacto del firmante", example = "cliente@test.com")
             @RequestParam(required = false) String correo,
+            @Parameter(description = "Fecha inicial de creación en formato ISO", example = "2026-06-01T00:00:00")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime fechaInicio,
+            @Parameter(description = "Fecha final de creación en formato ISO", example = "2026-06-30T23:59:59")
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime fechaFin) {
@@ -127,6 +140,7 @@ public class FirmaController {
                     description = "Firma no encontrada")
     })
     public FirmaEntity obtenerFirmaPorId(
+            @Parameter(description = "ID interno de la firma", example = "1")
             @PathVariable Long id) {
 
         return firmaService.obtenerFirmaPorId(id);
@@ -147,6 +161,7 @@ public class FirmaController {
                     description = "Token inválido o ausente")
     })
     public List<FirmaEntity> obtenerPorEstado(
+            @Parameter(description = "Estado interno de firma", example = "FIRMADO")
             @PathVariable String estado) {
 
         return firmaService.obtenerPorEstado(estado);
@@ -164,6 +179,7 @@ public class FirmaController {
                     description = "Token inválido o ausente")
     })
     public List<FirmaEntity> obtenerPorCorreo(
+            @Parameter(description = "Correo exacto del firmante", example = "cliente@test.com")
             @PathVariable String correo) {
 
         return firmaService.obtenerPorCorreo(correo);
@@ -184,6 +200,7 @@ public class FirmaController {
                     description = "Firma no encontrada")
     })
     public FirmaEntity firmarDocumento(
+            @Parameter(description = "ID interno de la firma", example = "1")
             @PathVariable Long id) {
 
         return firmaService.marcarComoFirmado(id);
@@ -204,6 +221,7 @@ public class FirmaController {
                     description = "Firma no encontrada")
     })
     public ApiResponse<FirmaEntity> rechazarDocumento(
+            @Parameter(description = "ID interno de la firma", example = "1")
             @PathVariable Long id) {
 
         return ApiResponse.exitoso(
@@ -225,6 +243,7 @@ public class FirmaController {
                     description = "Firma no encontrada")
     })
     public ApiResponse<FirmaEntity> expirarDocumento(
+            @Parameter(description = "ID interno de la firma", example = "1")
             @PathVariable Long id) {
 
         return ApiResponse.exitoso(
@@ -246,6 +265,7 @@ public class FirmaController {
                     description = "Firma no encontrada")
     })
     public ApiResponse<List<FirmaEventoResponseDTO>> obtenerEventosFirma(
+            @Parameter(description = "ID interno de la firma", example = "1")
             @PathVariable Long id) {
 
         return ApiResponse.exitoso(

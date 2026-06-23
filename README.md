@@ -421,6 +421,29 @@ o:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+JSON OpenAPI:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
+Uso recomendado desde Swagger UI:
+
+1. Ejecutar `POST /auth/login` con las credenciales locales de desarrollo.
+2. Copiar el valor `token` de la respuesta.
+3. Presionar el botón `Authorize` y pegar el JWT como Bearer token.
+4. Probar los endpoints de `Firmas`.
+5. Para pruebas de webhook, usar `POST /webhooks/signio` con el header `X-Signio-Webhook-Secret`.
+
+La documentación OpenAPI incluye:
+
+- descripción del flujo funcional del servicio;
+- tags por módulo: autenticación, firmas y webhooks Signio;
+- seguridad JWT Bearer documentada;
+- ejemplos de request/response en los DTO principales;
+- descripción de filtros, paginación y cambios de estado;
+- contrato del webhook preparado para la futura integración real con Signio.
+
 ## Configuración
 
 Archivo principal:

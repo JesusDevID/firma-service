@@ -24,7 +24,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión y obtener token JWT")
+    @Operation(
+            summary = "Iniciar sesión y obtener token JWT",
+            description = "Devuelve un JWT para usar en el botón Authorize de Swagger. Credenciales mock actuales: admin / admin123.")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
