@@ -4,7 +4,9 @@ public enum EstadoFirma {
 
     PENDIENTE,
     ENVIADO,
+    EN_PROCESO,
     FIRMADO,
-    ERROR,
-    RECHAZADO
+    RECHAZADO,
+    EXPIRADO,
+    ERROR
 }

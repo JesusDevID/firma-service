@@ -3,13 +3,14 @@ import java.util.List;
 import com.equidad.firmaservice.model.FirmaEntity;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 
 
 @Repository
 public interface FirmaRepository
-        extends JpaRepository<FirmaEntity, Long> {
+        extends JpaRepository<FirmaEntity, Long>, JpaSpecificationExecutor<FirmaEntity> {
 
     List<FirmaEntity> findByEstado(String estado);
 

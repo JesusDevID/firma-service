@@ -23,6 +23,35 @@ public class FirmaEntity {
 
     private LocalDateTime fechaCreacion;
 
+    private LocalDateTime fechaActualizacion;
+
+    private String usuarioCreacion;
+
+    private String usuarioActualizacion;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime ahora = LocalDateTime.now();
+        if (fechaCreacion == null) {
+            fechaCreacion = ahora;
+        }
+        fechaActualizacion = ahora;
+        if (usuarioCreacion == null || usuarioCreacion.isBlank()) {
+            usuarioCreacion = "sistema";
+        }
+        if (usuarioActualizacion == null || usuarioActualizacion.isBlank()) {
+            usuarioActualizacion = usuarioCreacion;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        fechaActualizacion = LocalDateTime.now();
+        if (usuarioActualizacion == null || usuarioActualizacion.isBlank()) {
+            usuarioActualizacion = "sistema";
+        }
+    }
+
     public Long getId() {
         return id;
     }
@@ -65,5 +94,29 @@ public class FirmaEntity {
 
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
+    }
+
+    public String getUsuarioCreacion() {
+        return usuarioCreacion;
+    }
+
+    public void setUsuarioCreacion(String usuarioCreacion) {
+        this.usuarioCreacion = usuarioCreacion;
+    }
+
+    public String getUsuarioActualizacion() {
+        return usuarioActualizacion;
+    }
+
+    public void setUsuarioActualizacion(String usuarioActualizacion) {
+        this.usuarioActualizacion = usuarioActualizacion;
     }
 }

@@ -1,0 +1,29 @@
+spring:
+  h2:
+    console:
+      enabled: false
+  datasource:
+    url: ${DATASOURCE_URL}
+    driver-class-name: ${DATASOURCE_DRIVER:org.postgresql.Driver}
+    username: ${DATASOURCE_USER}
+    password: ${DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-millis: ${JWT_EXPIRATION_MILLIS:3600000}
+
+signio:
+  url: ${SIGNIO_URL}
+  token: ${SIGNIO_TOKEN}
+
+management:
+  endpoint:
+    health:
+      show-details: never

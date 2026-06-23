@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: ${H2_URL:jdbc:h2:file:./data/firmadb-dev}
+    driver-class-name: org.h2.Driver
+    username: ${H2_USER:sa}
+    password: ${H2_PASSWORD:}
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:equidad-firma-service-jwt-secret-key-dev-2026-super-segura}
+    expiration-millis: ${JWT_EXPIRATION_MILLIS:86400000}
+
+signio:
+  url: ${SIGNIO_URL:https://api.signio.com}
+  token: ${SIGNIO_TOKEN:TOKEN_PRUEBA_123}

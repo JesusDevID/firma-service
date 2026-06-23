@@ -4,13 +4,18 @@ import com.equidad.firmaservice.client.SignioClient;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.dto.SignioResponseDTO;
+import com.equidad.firmaservice.exception.BusinessException;
+import com.equidad.firmaservice.exception.ResourceNotFoundException;
 import com.equidad.firmaservice.model.EstadoFirma;
 import com.equidad.firmaservice.model.FirmaEntity;
 import com.equidad.firmaservice.repository.FirmaRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,32 +39,28 @@ public class FirmaService {
 
     public FirmaResponseDTO procesarFirma(FirmaRequestDTO request) {
 
-        logger.info("Procesando documento: {}",
-                request.getIdDocumento());
-
-        logger.info("Correo receptor: {}",
-                request.getCorreo());
+        logger.info("Iniciando proceso de firma");
 
         SignioResponseDTO respuestaSignio =
                 signioClient.enviarDocumento(
                         request.getIdDocumento());
 
-        logger.info("Estado Signio: {}",
+        logger.info("Respuesta mock de Signio recibida con estado: {}",
                 respuestaSignio.getEstado());
 
         EstadoFirma estado;
 
-        if (respuestaSignio.getEstado().equals("OK")) {
+        if ("OK".equals(respuestaSignio.getEstado())) {
 
             estado = EstadoFirma.ENVIADO;
 
-            logger.info("Documento enviado correctamente");
+            logger.info("Documento enviado correctamente al cliente mock");
 
         } else {
 
             estado = EstadoFirma.ERROR;
 
-            logger.error("Error enviando documento a Signio");
+            logger.error("Error enviando documento al cliente mock");
         }
 
         FirmaEntity firmaEntity = new FirmaEntity();
@@ -76,12 +77,12 @@ public class FirmaService {
         firmaEntity.setRespuestaSignio(
                 respuestaSignio.getMensaje());
 
-        firmaEntity.setFechaCreacion(
-                LocalDateTime.now());
+        firmaEntity.setUsuarioCreacion(usuarioActual());
+        firmaEntity.setUsuarioActualizacion(usuarioActual());
 
         firmaRepository.save(firmaEntity);
 
-        logger.info("Firma guardada en base de datos");
+        logger.info("Firma guardada con estado: {}", estado.name());
 
         return new FirmaResponseDTO(
                 "Solicitud procesada correctamente",
@@ -91,9 +92,46 @@ public class FirmaService {
 
     public List<FirmaEntity> obtenerTodas() {
 
-        logger.info("Consultando todas las firmas");
+        logger.info("Consultando todas las firmas sin paginación");
 
         return firmaRepository.findAll();
+    }
+
+    public Page<FirmaEntity> buscarFirmas(String estado,
+                                          String correo,
+                                          LocalDateTime fechaInicio,
+                                          LocalDateTime fechaFin,
+                                          Pageable pageable) {
+
+        logger.info("Consultando firmas con filtros y paginación");
+
+        Specification<FirmaEntity> specification =
+                (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+
+        if (estado != null && !estado.isBlank()) {
+            EstadoFirma estadoFirma = validarEstado(estado);
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("estado"), estadoFirma.name()));
+        }
+
+        if (correo != null && !correo.isBlank()) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("correo"), correo));
+        }
+
+        if (fechaInicio != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.greaterThanOrEqualTo(
+                            root.get("fechaCreacion"), fechaInicio));
+        }
+
+        if (fechaFin != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.lessThanOrEqualTo(
+                            root.get("fechaCreacion"), fechaFin));
+        }
+
+        return firmaRepository.findAll(specification, pageable);
     }
 
     public FirmaEntity obtenerFirmaPorId(Long id) {
@@ -102,36 +140,80 @@ public class FirmaService {
 
         return firmaRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Firma no encontrada"));
+                        new ResourceNotFoundException("Firma no encontrada"));
     }
 
     public List<FirmaEntity> obtenerPorEstado(String estado) {
 
         logger.info("Buscando firmas por estado: {}", estado);
 
-        return firmaRepository.findByEstado(estado);
+        return firmaRepository.findByEstado(validarEstado(estado).name());
     }
 
     public List<FirmaEntity> obtenerPorCorreo(String correo) {
 
-        logger.info("Buscando firmas por correo: {}", correo);
+        logger.info("Buscando firmas por correo");
 
         return firmaRepository.findByCorreo(correo);
     }
 
     public FirmaEntity marcarComoFirmado(Long id) {
 
-        logger.info("Marcando firma como FIRMADA: {}", id);
+        return cambiarEstado(id, EstadoFirma.FIRMADO);
+    }
+
+    public FirmaEntity rechazarFirma(Long id) {
+
+        return cambiarEstado(id, EstadoFirma.RECHAZADO);
+    }
+
+    public FirmaEntity expirarFirma(Long id) {
+
+        return cambiarEstado(id, EstadoFirma.EXPIRADO);
+    }
+
+    private FirmaEntity cambiarEstado(Long id, EstadoFirma nuevoEstado) {
+
+        logger.info("Cambiando estado de firma. id={}, nuevoEstado={}",
+                id, nuevoEstado.name());
 
         FirmaEntity firma =
                 firmaRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Firma no encontrada"));
 
-        firma.setEstado("FIRMADO");
+        firma.setEstado(nuevoEstado.name());
+        firma.setUsuarioActualizacion(usuarioActual());
 
-        return firmaRepository.save(firma);
+        FirmaEntity firmaActualizada = firmaRepository.save(firma);
+
+        logger.info("Estado de firma actualizado. id={}, nuevoEstado={}",
+                id, nuevoEstado.name());
+
+        return firmaActualizada;
+    }
+
+    private EstadoFirma validarEstado(String estado) {
+
+        try {
+            return EstadoFirma.valueOf(estado.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Estado de firma inválido: " + estado);
+        }
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
+            return "sistema";
+        }
+
+        return authentication.getName();
     }
 }
-

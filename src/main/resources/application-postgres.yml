@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/firma_db}
+    driver-class-name: org.postgresql.Driver
+    username: ${POSTGRES_USER:firma_user}
+    password: ${POSTGRES_PASSWORD:firma_password}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:equidad-firma-service-jwt-secret-postgres-2026-super-segura}
+    expiration-millis: ${JWT_EXPIRATION_MILLIS:86400000}
+
+signio:
+  url: ${SIGNIO_URL:https://api.signio.com}
+  token: ${SIGNIO_TOKEN:TOKEN_PRUEBA_123}

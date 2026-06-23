@@ -4,12 +4,8 @@ import com.equidad.firmaservice.config.SignioConfig;
 import com.equidad.firmaservice.dto.SignioResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-
-import java.util.Map;
 
 @Component
 public class SignioClient {
@@ -29,39 +25,18 @@ public class SignioClient {
 
     public SignioResponseDTO enviarDocumento(String documentoId) {
 
-        logger.info("Enviando documento a Signio: {}", documentoId);
-
-        logger.info("URL Signio: {}",
-                signioConfig.getUrl());
-
-        Map<String, String> body = Map.of(
-                "documentoId", documentoId
-        );
-
-        restClient.post()
-                .uri("https://httpbin.org/post")
-                .header(
-                        HttpHeaders.AUTHORIZATION,
-                        "Bearer " + signioConfig.getToken()
-                )
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(String.class);
-
-        logger.info("Respuesta HTTP recibida");
+        logger.info("Preparando envío mock a Signio");
 
         SignioResponseDTO responseDTO =
                 new SignioResponseDTO();
 
         responseDTO.setEstado("OK");
-
-        // RESPUESTA LIMPIA
         responseDTO.setMensaje(
-                "Documento enviado correctamente a Signio"
+                "Documento enviado correctamente al mock de Signio"
         );
+
+        logger.info("Respuesta mock de Signio generada");
 
         return responseDTO;
     }
 }
-

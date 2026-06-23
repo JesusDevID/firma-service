@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:firma-service-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  flyway:
+    enabled: false
+
+security:
+  jwt:
+    secret: equidad-firma-service-jwt-secret-test-2026-super-segura
+    expiration-millis: 86400000
+
+signio:
+  url: https://signio.mock.local
+  token: TOKEN_TEST
