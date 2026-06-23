@@ -2,6 +2,7 @@ package com.equidad.firmaservice.controller;
 
 import com.equidad.firmaservice.model.EstadoFirma;
 import com.equidad.firmaservice.model.FirmaEntity;
+import com.equidad.firmaservice.dto.FirmaEventoResponseDTO;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.service.FirmaService;
@@ -125,5 +126,22 @@ class FirmaControllerTest {
         assertThat(controller.obtenerPorCorreo("usuario@correo.com"))
                 .containsExactly(firma);
         assertThat(controller.firmarDocumento(1L)).isSameAs(firma);
+    }
+
+    @Test
+    void obtenerEventosFirmaRetornaApiResponse() {
+        FirmaService service = mock(FirmaService.class);
+        FirmaController controller = new FirmaController(service);
+        FirmaEventoResponseDTO evento = new FirmaEventoResponseDTO();
+        evento.setEstadoNuevo(EstadoFirma.FIRMADO.name());
+
+        when(service.obtenerEventosFirma(1L)).thenReturn(List.of(evento));
+
+        var response = controller.obtenerEventosFirma(1L);
+
+        assertThat(response.getCodigo()).isEqualTo(200);
+        assertThat(response.getData()).hasSize(1);
+        assertThat(response.getData().get(0).getEstadoNuevo())
+                .isEqualTo(EstadoFirma.FIRMADO.name());
     }
 }

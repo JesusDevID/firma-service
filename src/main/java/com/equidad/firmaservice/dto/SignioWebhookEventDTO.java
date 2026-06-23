@@ -29,6 +29,12 @@ public class SignioWebhookEventDTO {
             example = "SIGNIO-TX-987")
     private String idTransaccionExterna;
 
+    @Size(max = 255, message = "El evento externo no puede superar 255 caracteres")
+    @Schema(
+            description = "Identificador único del evento enviado por Signio. Si se repite, el webhook será idempotente",
+            example = "SIGNIO-EVT-456")
+    private String idEventoExterno;
+
     @Size(max = 500, message = "El mensaje no puede superar 500 caracteres")
     @Schema(
             description = "Mensaje descriptivo del evento externo",
@@ -62,6 +68,14 @@ public class SignioWebhookEventDTO {
 
     public void setIdTransaccionExterna(String idTransaccionExterna) {
         this.idTransaccionExterna = idTransaccionExterna;
+    }
+
+    public String getIdEventoExterno() {
+        return idEventoExterno;
+    }
+
+    public void setIdEventoExterno(String idEventoExterno) {
+        this.idEventoExterno = idEventoExterno;
     }
 
     public String getMensaje() {

@@ -83,6 +83,34 @@ class DtoValidationTest {
     }
 
     @Test
+    void firmaEventoResponseGettersYSetters() {
+        FirmaEventoResponseDTO response = new FirmaEventoResponseDTO();
+        LocalDateTime fecha = LocalDateTime.now();
+
+        response.setProveedor("SIGNIO");
+        response.setIdEventoExterno("EVT-1");
+        response.setIdTransaccionExterna("TX-1");
+        response.setDocumentoId("DOC-1");
+        response.setEstadoExterno("SIGNED");
+        response.setEstadoAnterior("ENVIADO");
+        response.setEstadoNuevo("FIRMADO");
+        response.setMensaje("ok");
+        response.setFechaEvento(fecha);
+        response.setFechaRecepcion(fecha.plusSeconds(1));
+
+        assertThat(response.getProveedor()).isEqualTo("SIGNIO");
+        assertThat(response.getIdEventoExterno()).isEqualTo("EVT-1");
+        assertThat(response.getIdTransaccionExterna()).isEqualTo("TX-1");
+        assertThat(response.getDocumentoId()).isEqualTo("DOC-1");
+        assertThat(response.getEstadoExterno()).isEqualTo("SIGNED");
+        assertThat(response.getEstadoAnterior()).isEqualTo("ENVIADO");
+        assertThat(response.getEstadoNuevo()).isEqualTo("FIRMADO");
+        assertThat(response.getMensaje()).isEqualTo("ok");
+        assertThat(response.getFechaEvento()).isEqualTo(fecha);
+        assertThat(response.getFechaRecepcion()).isEqualTo(fecha.plusSeconds(1));
+    }
+
+    @Test
     void errorResponseGettersYSettersYConstructor() {
         LocalDateTime fecha = LocalDateTime.now();
         ErrorResponseDTO response =

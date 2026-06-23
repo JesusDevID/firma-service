@@ -16,6 +16,8 @@ Actualmente Signio funciona como cliente mock local, sin llamadas HTTP externas.
 - Estados completos de firma.
 - Envío mock a Signio.
 - Webhook preparado para eventos de Signio.
+- Idempotencia de webhooks por `idEventoExterno`.
+- Historial auditable de eventos externos de firma.
 - Validación de DTOs con Bean Validation.
 - Auditoría automática de creación y actualización.
 - Paginación.
@@ -80,6 +82,8 @@ POST /webhooks/signio
 GET /swagger-ui/**
 GET /v3/api-docs/**
 GET /actuator/health
+GET /actuator/health/liveness
+GET /actuator/health/readiness
 GET /actuator/info
 ```
 
@@ -237,6 +241,15 @@ PUT /firmas/{id}/expirar
 Authorization: Bearer <jwt>
 ```
 
+### Consultar historial de eventos
+
+```http
+GET /firmas/{id}/eventos
+Authorization: Bearer <jwt>
+```
+
+Devuelve los eventos externos recibidos para una firma, sin exponer payloads sensibles ni detalles internos del proveedor.
+
 ## Webhook de Signio
 
 Endpoint preparado:
@@ -255,6 +268,7 @@ Body normalizado actual:
 {
   "documentoId": "DOC-123",
   "estado": "SIGNED",
+  "idEventoExterno": "SIGNIO-EVT-456",
   "idTransaccionExterna": "SIGNIO-TX-987",
   "mensaje": "Documento firmado correctamente",
   "fechaEvento": "2026-06-23T10:00:00"
@@ -271,11 +285,31 @@ Respuesta:
     "documentoId": "DOC-123",
     "estado": "FIRMADO",
     "proveedorFirma": "SIGNIO",
+    "ultimoEventoExterno": "SIGNED",
     "idTransaccionExterna": "SIGNIO-TX-987",
-    "ultimoEventoExterno": "SIGNED"
+    "fechaUltimoEvento": "2026-06-23T10:00:00"
   }
 }
 ```
+
+### Idempotencia de webhooks
+
+Si Signio reintenta el mismo evento con el mismo `idEventoExterno`, el servicio lo detecta y no reprocesa el cambio de estado. Esto evita cambios repetidos, duplicidad en el historial y efectos secundarios cuando el proveedor haga reintentos.
+
+### Historial auditable
+
+Cada evento nuevo recibido se almacena en `firma_eventos` con:
+
+- proveedor
+- id del evento externo
+- id de transacción externa
+- documento
+- estado externo
+- estado anterior
+- estado nuevo
+- mensaje
+- fecha del evento
+- fecha de recepción
 
 Mapeo de estados externos soportado:
 
@@ -338,6 +372,8 @@ Disponibles:
 
 ```http
 GET /actuator/health
+GET /actuator/health/liveness
+GET /actuator/health/readiness
 GET /actuator/info
 ```
 
@@ -361,6 +397,12 @@ Archivo principal:
 
 ```text
 src/main/resources/application.yaml
+```
+
+Plantilla de variables:
+
+```text
+.env.example
 ```
 
 Variables externalizadas:
@@ -413,6 +455,7 @@ Migración inicial:
 ```text
 V1__create_firmas_table.sql
 V2__add_external_integration_fields.sql
+V3__create_firma_eventos_table.sql
 ```
 
 En `test`, Flyway está deshabilitado y se usa H2 en memoria con `create-drop`.
@@ -459,6 +502,7 @@ Suite actual:
 - `AuthControllerTest`
 - `JwtUtilTest`
 - `JwtFilterTest`
+- `SecurityIntegrationTest`
 - `GlobalExceptionHandlerTest`
 - `FirmaEntityTest`
 - `DtoValidationTest`
@@ -515,3 +559,4 @@ El núcleo del microservicio queda preparado. Las tareas pendientes intencionale
 - Confirmar URL pública del webhook de Signio (`SIGNIO_WEBHOOK_URL`).
 - Confirmar secreto/header de seguridad de webhook (`SIGNIO_WEBHOOK_SECRET` o esquema HMAC real).
 - Ajustar el adaptador si el payload real de Signio difiere del contrato normalizado actual.
+- Sustituir la idempotencia por la firma/campo oficial del proveedor si Signio usa un identificador distinto.

@@ -1,6 +1,7 @@
 package com.equidad.firmaservice.controller;
 
 import com.equidad.firmaservice.dto.ApiResponse;
+import com.equidad.firmaservice.dto.FirmaEventoResponseDTO;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.model.FirmaEntity;
@@ -228,5 +229,26 @@ public class FirmaController {
 
         return ApiResponse.exitoso(
                 firmaService.expirarFirma(id));
+    }
+
+    @GetMapping("/{id}/eventos")
+    @Operation(summary = "Consultar historial de eventos de una firma")
+    @SecurityRequirement(name = "bearerAuth")
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "Historial consultado correctamente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "Token inválido o ausente"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "Firma no encontrada")
+    })
+    public ApiResponse<List<FirmaEventoResponseDTO>> obtenerEventosFirma(
+            @PathVariable Long id) {
+
+        return ApiResponse.exitoso(
+                firmaService.obtenerEventosFirma(id));
     }
 }

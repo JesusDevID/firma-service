@@ -9,6 +9,8 @@ import com.equidad.firmaservice.exception.BusinessException;
 import com.equidad.firmaservice.exception.ResourceNotFoundException;
 import com.equidad.firmaservice.model.EstadoFirma;
 import com.equidad.firmaservice.model.FirmaEntity;
+import com.equidad.firmaservice.model.FirmaEventoEntity;
+import com.equidad.firmaservice.repository.FirmaEventoRepository;
 import com.equidad.firmaservice.repository.FirmaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,9 +41,12 @@ class FirmaServiceTest {
     @Mock
     private FirmaRepository firmaRepository;
 
+    @Mock
+    private FirmaEventoRepository firmaEventoRepository;
+
     @Test
     void procesarFirmaGuardaFirmaEnEstadoEnviado() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaRequestDTO request = new FirmaRequestDTO();
         request.setIdDocumento("DOC-1");
         request.setCorreo("usuario@correo.com");
@@ -67,7 +73,7 @@ class FirmaServiceTest {
 
     @Test
     void procesarFirmaGuardaFirmaEnEstadoErrorCuandoMockFalla() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaRequestDTO request = new FirmaRequestDTO();
         request.setIdDocumento("DOC-2");
         request.setCorreo("usuario@correo.com");
@@ -86,7 +92,7 @@ class FirmaServiceTest {
 
     @Test
     void obtenerTodasRetornaRepositoryFindAll() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         when(firmaRepository.findAll()).thenReturn(List.of(new FirmaEntity()));
 
         List<FirmaEntity> resultado = service.obtenerTodas();
@@ -96,7 +102,7 @@ class FirmaServiceTest {
 
     @Test
     void obtenerPorEstadoValidoNormalizaEstado() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         when(firmaRepository.findByEstado(EstadoFirma.FIRMADO.name()))
                 .thenReturn(List.of(new FirmaEntity()));
 
@@ -108,7 +114,7 @@ class FirmaServiceTest {
 
     @Test
     void obtenerPorCorreoConsultaRepository() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         when(firmaRepository.findByCorreo("usuario@correo.com"))
                 .thenReturn(List.of(new FirmaEntity()));
 
@@ -120,7 +126,7 @@ class FirmaServiceTest {
 
     @Test
     void obtenerFirmaPorIdCuandoNoExisteLanzaResourceNotFound() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
 
         when(firmaRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -131,7 +137,7 @@ class FirmaServiceTest {
 
     @Test
     void rechazarFirmaActualizaEstado() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaEntity firma = new FirmaEntity();
         firma.setEstado(EstadoFirma.ENVIADO.name());
 
@@ -147,7 +153,7 @@ class FirmaServiceTest {
 
     @Test
     void marcarComoFirmadoActualizaEstado() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaEntity firma = new FirmaEntity();
 
         when(firmaRepository.findById(1L)).thenReturn(Optional.of(firma));
@@ -161,7 +167,7 @@ class FirmaServiceTest {
 
     @Test
     void expirarFirmaActualizaEstado() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaEntity firma = new FirmaEntity();
 
         when(firmaRepository.findById(1L)).thenReturn(Optional.of(firma));
@@ -175,7 +181,7 @@ class FirmaServiceTest {
 
     @Test
     void obtenerPorEstadoInvalidoLanzaBusinessException() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
 
         assertThatThrownBy(() -> service.obtenerPorEstado("NO_EXISTE"))
                 .isInstanceOf(BusinessException.class)
@@ -185,7 +191,7 @@ class FirmaServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void buscarFirmasUsaRepositoryConSpecificationYPaginacion() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         PageRequest pageable = PageRequest.of(0, 10);
 
         when(firmaRepository.findAll(any(Specification.class), any(PageRequest.class)))
@@ -203,7 +209,7 @@ class FirmaServiceTest {
 
     @Test
     void procesarEventoSignioActualizaFirmaPorDocumento() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaEntity firma = new FirmaEntity();
         firma.setDocumentoId("DOC-100");
         firma.setEstado(EstadoFirma.ENVIADO.name());
@@ -212,8 +218,13 @@ class FirmaServiceTest {
         event.setDocumentoId("DOC-100");
         event.setEstado("SIGNED");
         event.setIdTransaccionExterna("TX-1");
+        event.setIdEventoExterno("EVT-1");
         event.setMensaje("Firmado desde webhook");
 
+        when(firmaEventoRepository.findByProveedorAndIdEventoExterno(
+                "SIGNIO",
+                "EVT-1"))
+                .thenReturn(Optional.empty());
         when(firmaRepository.findFirstByDocumentoIdOrderByIdDesc("DOC-100"))
                 .thenReturn(Optional.of(firma));
         when(firmaRepository.save(firma)).thenReturn(firma);
@@ -227,11 +238,12 @@ class FirmaServiceTest {
         assertThat(actualizada.getUltimoEventoExterno()).isEqualTo("SIGNED");
         assertThat(actualizada.getFechaUltimoEvento()).isNotNull();
         verify(firmaRepository).save(firma);
+        verify(firmaEventoRepository).save(any(FirmaEventoEntity.class));
     }
 
     @Test
     void procesarEventoSignioConEstadoNoSoportadoLanzaBusinessException() {
-        FirmaService service = new FirmaService(signioClient, firmaRepository);
+        FirmaService service = crearService();
         FirmaEntity firma = new FirmaEntity();
 
         SignioWebhookEventDTO event = new SignioWebhookEventDTO();
@@ -244,5 +256,70 @@ class FirmaServiceTest {
         assertThatThrownBy(() -> service.procesarEventoSignio(event))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Estado externo de Signio no soportado");
+    }
+
+    @Test
+    void procesarEventoSignioDuplicadoNoReprocesaEstado() {
+        FirmaService service = crearService();
+        FirmaEntity firma = new FirmaEntity();
+        firma.setDocumentoId("DOC-100");
+        firma.setEstado(EstadoFirma.FIRMADO.name());
+
+        FirmaEventoEntity eventoExistente = new FirmaEventoEntity();
+        eventoExistente.setFirma(firma);
+        eventoExistente.setIdEventoExterno("EVT-1");
+
+        SignioWebhookEventDTO event = new SignioWebhookEventDTO();
+        event.setDocumentoId("DOC-100");
+        event.setEstado("REJECTED");
+        event.setIdEventoExterno("EVT-1");
+
+        when(firmaEventoRepository.findByProveedorAndIdEventoExterno(
+                "SIGNIO",
+                "EVT-1"))
+                .thenReturn(Optional.of(eventoExistente));
+
+        FirmaEntity resultado = service.procesarEventoSignio(event);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoFirma.FIRMADO.name());
+        verify(firmaRepository, never()).save(any(FirmaEntity.class));
+        verify(firmaEventoRepository, never()).save(any(FirmaEventoEntity.class));
+    }
+
+    @Test
+    void obtenerEventosFirmaRetornaHistorialOrdenadoDesdeRepository() {
+        FirmaService service = crearService();
+        FirmaEventoEntity evento = new FirmaEventoEntity();
+        evento.setProveedor("SIGNIO");
+        evento.setDocumentoId("DOC-100");
+        evento.setEstadoNuevo(EstadoFirma.FIRMADO.name());
+
+        when(firmaRepository.existsById(1L)).thenReturn(true);
+        when(firmaEventoRepository.findByFirmaIdOrderByFechaRecepcionDesc(1L))
+                .thenReturn(List.of(evento));
+
+        var resultado = service.obtenerEventosFirma(1L);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getProveedor()).isEqualTo("SIGNIO");
+        assertThat(resultado.get(0).getEstadoNuevo())
+                .isEqualTo(EstadoFirma.FIRMADO.name());
+    }
+
+    @Test
+    void obtenerEventosFirmaCuandoNoExisteLanzaResourceNotFound() {
+        FirmaService service = crearService();
+        when(firmaRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.obtenerEventosFirma(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Firma no encontrada");
+    }
+
+    private FirmaService crearService() {
+        return new FirmaService(
+                signioClient,
+                firmaRepository,
+                firmaEventoRepository);
     }
 }

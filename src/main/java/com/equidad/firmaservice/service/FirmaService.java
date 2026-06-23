@@ -1,6 +1,7 @@
 package com.equidad.firmaservice.service;
 
 import com.equidad.firmaservice.client.SignioClient;
+import com.equidad.firmaservice.dto.FirmaEventoResponseDTO;
 import com.equidad.firmaservice.dto.FirmaRequestDTO;
 import com.equidad.firmaservice.dto.FirmaResponseDTO;
 import com.equidad.firmaservice.dto.SignioWebhookEventDTO;
@@ -9,6 +10,8 @@ import com.equidad.firmaservice.exception.BusinessException;
 import com.equidad.firmaservice.exception.ResourceNotFoundException;
 import com.equidad.firmaservice.model.EstadoFirma;
 import com.equidad.firmaservice.model.FirmaEntity;
+import com.equidad.firmaservice.model.FirmaEventoEntity;
+import com.equidad.firmaservice.repository.FirmaEventoRepository;
 import com.equidad.firmaservice.repository.FirmaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +33,15 @@ public class FirmaService {
 
     private final SignioClient signioClient;
     private final FirmaRepository firmaRepository;
+    private final FirmaEventoRepository firmaEventoRepository;
 
     public FirmaService(SignioClient signioClient,
-                        FirmaRepository firmaRepository) {
+                        FirmaRepository firmaRepository,
+                        FirmaEventoRepository firmaEventoRepository) {
 
         this.signioClient = signioClient;
         this.firmaRepository = firmaRepository;
+        this.firmaEventoRepository = firmaEventoRepository;
     }
 
     public FirmaResponseDTO procesarFirma(FirmaRequestDTO request) {
@@ -175,10 +181,40 @@ public class FirmaService {
         return cambiarEstado(id, EstadoFirma.EXPIRADO);
     }
 
+    public List<FirmaEventoResponseDTO> obtenerEventosFirma(Long id) {
+
+        logger.info("Consultando historial de eventos de firma. id={}", id);
+
+        if (!firmaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Firma no encontrada");
+        }
+
+        return firmaEventoRepository
+                .findByFirmaIdOrderByFechaRecepcionDesc(id)
+                .stream()
+                .map(this::mapearEventoResponse)
+                .toList();
+    }
+
     public FirmaEntity procesarEventoSignio(SignioWebhookEventDTO event) {
 
         logger.info("Procesando webhook de Signio. documentoId={}, estadoExterno={}",
                 event.getDocumentoId(), event.getEstado());
+
+        if (event.getIdEventoExterno() != null
+                && !event.getIdEventoExterno().isBlank()) {
+
+            var eventoExistente =
+                    firmaEventoRepository.findByProveedorAndIdEventoExterno(
+                            "SIGNIO",
+                            event.getIdEventoExterno());
+
+            if (eventoExistente.isPresent()) {
+                logger.info("Webhook Signio duplicado ignorado. idEventoExterno={}",
+                        event.getIdEventoExterno());
+                return eventoExistente.get().getFirma();
+            }
+        }
 
         FirmaEntity firma =
                 firmaRepository.findFirstByDocumentoIdOrderByIdDesc(
@@ -188,6 +224,7 @@ public class FirmaService {
                                         "Firma no encontrada para el documento informado"));
 
         EstadoFirma estado = mapearEstadoSignio(event.getEstado());
+        String estadoAnterior = firma.getEstado();
 
         firma.setEstado(estado.name());
         firma.setProveedorFirma("SIGNIO");
@@ -201,11 +238,48 @@ public class FirmaService {
         firma.setUsuarioActualizacion("webhook-signio");
 
         FirmaEntity firmaActualizada = firmaRepository.save(firma);
+        guardarEventoSignio(event, firmaActualizada, estadoAnterior, estado.name());
 
         logger.info("Webhook de Signio aplicado. firmaId={}, nuevoEstado={}",
                 firmaActualizada.getId(), estado.name());
 
         return firmaActualizada;
+    }
+
+    private void guardarEventoSignio(SignioWebhookEventDTO event,
+                                     FirmaEntity firma,
+                                     String estadoAnterior,
+                                     String estadoNuevo) {
+
+        FirmaEventoEntity evento = new FirmaEventoEntity();
+        evento.setFirma(firma);
+        evento.setProveedor("SIGNIO");
+        evento.setIdEventoExterno(event.getIdEventoExterno());
+        evento.setIdTransaccionExterna(event.getIdTransaccionExterna());
+        evento.setDocumentoId(event.getDocumentoId());
+        evento.setEstadoExterno(event.getEstado());
+        evento.setEstadoAnterior(estadoAnterior);
+        evento.setEstadoNuevo(estadoNuevo);
+        evento.setMensaje(event.getMensaje());
+        evento.setFechaEvento(event.getFechaEvento());
+
+        firmaEventoRepository.save(evento);
+    }
+
+    private FirmaEventoResponseDTO mapearEventoResponse(FirmaEventoEntity evento) {
+
+        FirmaEventoResponseDTO response = new FirmaEventoResponseDTO();
+        response.setProveedor(evento.getProveedor());
+        response.setIdEventoExterno(evento.getIdEventoExterno());
+        response.setIdTransaccionExterna(evento.getIdTransaccionExterna());
+        response.setDocumentoId(evento.getDocumentoId());
+        response.setEstadoExterno(evento.getEstadoExterno());
+        response.setEstadoAnterior(evento.getEstadoAnterior());
+        response.setEstadoNuevo(evento.getEstadoNuevo());
+        response.setMensaje(evento.getMensaje());
+        response.setFechaEvento(evento.getFechaEvento());
+        response.setFechaRecepcion(evento.getFechaRecepcion());
+        return response;
     }
 
     private FirmaEntity cambiarEstado(Long id, EstadoFirma nuevoEstado) {
